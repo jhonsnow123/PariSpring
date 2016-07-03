@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.gen.dao.GenTemplateDao">
+    
+    <sql id="genTemplateColumns">
+		a.*
+	</sql>
+	
+	<sql id="genTemplateJoins">
+		
+    </sql>
+    
+    <select id="get" resultType="GenTemplate">
+		SELECT 
+			<include refid="genTemplateColumns"/>
+		FROM GEN_TEMPLATE a
+		<include refid="genTemplateJoins"/>
+		WHERE a.ID = #{id}
+	</select>
+	
+	<select id="findList" resultType="GenTemplate">
+		SELECT 
+			<include refid="genTemplateColumns"/>
+		FROM GEN_TEMPLATE a
+		<include refid="genTemplateJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		<if test="name != null and name != ''">
+			AND a.NAME LIKE 
+				<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+		</if>
+		<if test="category != null and category != ''">
+			AND a.CATEGORY LIKE 
+				<if test="dbName == 'oracle'">'%'||#{category}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{category}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{category},'%')</if>
+		</if>
+		ORDER BY a.NAME, a.UPDATE_DATE DESC
+	</select>
+	
+	<select id="findAllList" resultType="GenTemplate">
+		SELECT 
+			<include refid="genTemplateColumns"/>
+		FROM GEN_TEMPLATE a
+		<include refid="genTemplateJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		ORDER BY a.NAME, a.UPDATE_DATE DESC
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO GEN_TEMPLATE(
+			ID, 
+			NAME, 
+			CATEGORY, 
+			FILE_PATH, 
+			FILE_NAME, 
+			CONTENT, 
+			create_by, 
+			create_date, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{name}, 
+			#{category},  
+			#{filePath},  
+			#{fileName},  
+			#{content},  
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE GEN_TEMPLATE SET 
+			NAME = #{name}, 
+			CATEGORY = #{category},  
+			FILE_PATH = #{filePath},  
+			FILE_NAME = #{fileName},  
+			CONTENT = #{content},  
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE GEN_TEMPLATE SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id}
+	</update>
+	
+</mapper>

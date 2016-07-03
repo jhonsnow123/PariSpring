@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.sys.dao.MenuDao">
+	
+	<sql id="menuColumns">
+		a.ID,
+		a.PARENT_ID AS "parent.id",
+		a.PARENT_IDS,
+		a.NAME,
+		a.HREF,
+		a.TARGET,
+		a.ICON,
+		a.SORT,
+		a.IS_SHOW,
+		a.PERMISSION,
+		a.REMARKS,
+		a.CREATE_BY AS "createBy.id",
+		a.CREATE_DATE,
+		a.UPDATE_BY AS "updateBy.id",
+		a.UPDATE_DATE,
+		a.DEL_FLAG,
+		p.NAME AS "parent.name"
+	</sql>
+	
+	<sql id="menuJoins">
+		LEFT JOIN SYS_MENU p ON p.ID = a.PARENT_ID
+    </sql>
+	
+	<select id="get" resultType="Menu">
+		SELECT
+			<include refid="menuColumns"/>
+		FROM SYS_MENU a
+		<include refid="menuJoins"/>
+		WHERE a.ID = #{id}
+	</select>
+	
+	<select id="findAllList" resultType="Menu">
+		SELECT
+			<include refid="menuColumns"/>
+		FROM SYS_MENU a
+		<include refid="menuJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		ORDER BY a.SORT
+	</select>
+	
+	<select id="findByParentIdsLike" resultType="Menu">
+		SELECT
+			a.ID,
+			a.PARENT_ID AS "parent.id",
+			a.PARENT_IDS
+		FROM SYS_MENU a
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} AND a.PARENT_IDS LIKE #{parentIds}
+		ORDER BY a.SORT
+	</select>
+	
+	<select id="findByUserId" resultType="Menu">
+		SELECT DISTINCT
+			<include refid="menuColumns"/>
+		FROM SYS_MENU a
+		LEFT JOIN SYS_MENU p ON p.ID = a.PARENT_ID
+		JOIN SYS_ROLE_MENU rm ON rm.MENU_ID = a.ID
+		JOIN SYS_ROLE r ON r.ID = rm.ROLE_ID AND r.USEABLE='1'
+		JOIN SYS_USER_ROLE ur ON ur.ROLE_ID = r.ID
+		JOIN SYS_USER u ON u.ID = ur.USER_ID AND u.ID = #{userId}
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} AND r.DEL_FLAG = #{DEL_FLAG_NORMAL} AND u.DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		ORDER BY a.SORT
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_MENU(
+			ID, 
+			PARENT_ID, 
+			PARENT_IDS, 
+			NAME, 
+			HREF, 
+			TARGET, 
+			ICON, 
+			SORT, 
+			IS_SHOW, 
+			PERMISSION, 
+			CREATE_BY, 
+			CREATE_DATE, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{parent.id}, 
+			#{parentIds}, 
+			#{name}, 
+			#{href}, 
+			#{target}, 
+			#{icon}, 
+			#{sort}, 
+			#{isShow}, 
+			#{permission}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_MENU SET 
+			PARENT_ID = #{parent.id}, 
+			PARENT_IDS = #{parentIds}, 
+			NAME = #{name}, 
+			HREF = #{href}, 
+			TARGET = #{target}, 
+			ICON = #{icon}, 
+			SORT = #{sort}, 
+			IS_SHOW = #{isShow}, 
+			PERMISSION = #{permission}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="updateParentIds">
+		UPDATE SYS_MENU SET 
+			PARENT_ID = #{parent.id}, 
+			PARENT_IDS = #{parentIds}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="updateSort">
+		UPDATE SYS_MENU SET 
+			SORT = #{sort}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE SYS_MENU SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id} OR PARENT_IDS LIKE 
+					<if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+					<if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+	</update>
+	
+</mapper>

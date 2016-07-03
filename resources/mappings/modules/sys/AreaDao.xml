@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.sys.dao.AreaDao">
+    
+	<sql id="areaColumns">
+		a.ID,
+		a.PARENT_ID AS "parent.id",
+		a.PARENT_IDS,
+		a.CODE,
+		a.NAME,
+		a.SORT,
+		a.TYPE,
+		a.REMARKS,
+		a.CREATE_BY AS "createBy.id",
+		a.CREATE_DATE,
+		a.UPDATE_BY AS "updateBy.id",
+		a.UPDATE_DATE,
+		a.DEL_FLAG,
+		p.NAME AS "parent.name"
+	</sql>
+	
+	<sql id="areaJoins">
+		LEFT JOIN SYS_OFFICE p ON p.ID = a.PARENT_ID
+    </sql>
+    
+	<select id="get" resultType="Area">
+		SELECT
+			<include refid="areaColumns"/>
+		FROM SYS_AREA a
+		<include refid="areaJoins"/>
+		WHERE a.ID = #{id}
+	</select>
+	
+	<sql id="listAndCountSql">
+		FROM SYS_AREA a
+		<include refid="areaJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+		OR a.ID = #{currentUser.office.area.id}
+	</sql>
+	
+	<select id="findListCount" resultType="long">
+		SELECT COUNT(1)
+		<include refid="listAndCountSql"/>
+	</select>
+	
+	<select id="findList" resultType="Area">
+		SELECT
+			<include refid="areaColumns"/>
+		<include refid="listAndCountSql"/>
+		ORDER BY a.CODE
+		<if test="page !=null and !page.disabled">
+			${page.pagination}
+		</if>
+	</select>
+	
+	<select id="findAllList" resultType="Area">
+		SELECT
+			<include refid="areaColumns"/>
+		FROM SYS_AREA a
+		<include refid="areaJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		ORDER BY a.CODE
+	</select>
+	
+	<select id="findByParentIdsLike" resultType="Area">
+		SELECT
+			a.ID,
+			a.PARENT_ID AS "parent.id",
+			a.PARENT_IDS
+		FROM SYS_AREA a
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} AND a.PARENT_IDS LIKE #{parentIds}
+		ORDER BY a.CODE
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_AREA(
+			ID, 
+			PARENT_ID, 
+			PARENT_IDS, 
+			CODE, 
+			NAME, 
+			SORT,
+			TYPE, 
+			CREATE_BY, 
+			CREATE_DATE, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{parent.id}, 
+			#{parentIds}, 
+			#{code}, 
+			#{name}, 
+			#{sort}, 
+			#{type}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_AREA SET 
+			PARENT_ID = #{parent.id}, 
+			PARENT_IDS = #{parentIds}, 
+			CODE = #{code}, 
+			NAME = #{name}, 
+			SORT = #{sort}, 
+			TYPE = #{type}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="updateParentIds">
+		UPDATE SYS_AREA SET 
+			PARENT_ID = #{parent.id}, 
+			PARENT_IDS = #{parentIds}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE SYS_AREA SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id} OR PARENT_IDS LIKE 
+					<if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+					<if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+	</update>
+	
+</mapper>

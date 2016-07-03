@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.sys.dao.RoleDao">
+    
+    <resultMap id="roleResult" type="Role">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="enname" column="enname" />
+		<result property="roleType" column="roleType" />
+		<result property="dataScope" column="dataScope" />
+		<result property="remarks" column="remarks" />
+		<result property="useable" column="useable" />
+		<result property="sysData" column="sysData" /><!-- 
+		<collection property="userList" ofType="User">
+			<id property="id" column="userList.id" />
+			<id property="loginName" column="userList.loginName" />
+			<id property="name" column="userList.name" />
+			<id property="email" column="userList.email" />
+			<id property="phone" column="userList.phone" />
+			<id property="mobile" column="userList.mobile" />
+			<id property="office.name" column="userList.office.name" />
+			<id property="company.name" column="userList.company.name" />
+		</collection> -->
+		<collection property="menuList" ofType="Menu">
+			<id property="id" column="menuList.id" />
+		</collection>
+		<collection property="officeList" ofType="Office">
+			<id property="id" column="officeList.id" />
+		</collection>
+	</resultMap>
+	
+    <sql id="roleColumns">
+    	a.ID,
+    	a.OFFICE_ID AS "office.id",
+    	a.NAME,
+    	a.ENNAME,
+    	a.ROLE_TYPE AS roleType,
+		a.DATA_SCOPE AS dataScope,
+		a.REMARKS,
+		a.CREATE_BY AS "createBy.id",
+		a.CREATE_DATE,
+		a.UPDATE_BY AS "updateBy.id",
+		a.UPDATE_DATE,
+		a.DEL_FLAG,
+    	o.NAME AS "office.name",
+    	o.CODE,
+    	a.USEABLE AS useable,
+    	a.IS_SYS AS sysData
+    </sql>
+    
+	<select id="get" resultMap="roleResult">
+		SELECT
+			<include refid="roleColumns"/>,<!-- 
+			ur.USER_ID AS "userList.id",
+			u.LOGIN_NAME AS "userList.loginName",
+			u.NAME AS "userList.name",
+			u.email AS "userList.email",
+			u.phone AS "userList.phone",
+			u.mobile AS "userList.mobile",
+			uc.NAME AS "userList.company.name",
+			uo.NAME AS "userList.office.name", -->
+			rm.MENU_ID AS "menuList.id",
+			ro.OFFICE_ID AS "officeList.id"
+		FROM SYS_ROLE a
+		JOIN SYS_OFFICE o ON o.ID = a.OFFICE_ID<!-- 
+		LEFT JOIN SYS_USER_ROLE ur ON ur.ROLE_ID = a.id
+		LEFT JOIN SYS_USER u ON u.id = ur.USER_ID
+		LEFT JOIN SYS_OFFICE uc ON uc.id = u.company_id
+		LEFT JOIN SYS_OFFICE uo ON uo.id = u.OFFICE_ID -->
+		LEFT JOIN SYS_ROLE_MENU rm ON rm.ROLE_ID = a.ID
+		LEFT JOIN SYS_ROLE_OFFICE ro ON ro.ROLE_ID = a.ID
+		WHERE a.ID = #{id}
+	</select>
+	
+	<select id="getByName" resultType="Role">
+		SELECT
+			<include refid="roleColumns"/>
+		FROM SYS_ROLE a
+		JOIN SYS_OFFICE o ON o.ID = a.OFFICE_ID
+		WHERE a.NAME = #{name} AND a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+	</select>
+	
+	<select id="getByEnname" resultType="Role">
+		SELECT
+			<include refid="roleColumns"/>
+		FROM SYS_ROLE a
+		JOIN SYS_OFFICE o ON o.ID = a.OFFICE_ID
+		WHERE a.ENNAME = #{enname} AND a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+	</select>
+	
+	<sql id="listAndCountSql">
+		FROM SYS_ROLE a
+		LEFT JOIN SYS_OFFICE o ON o.ID = a.OFFICE_ID
+		LEFT JOIN SYS_USER_ROLE ur ON ur.ROLE_ID = a.ID
+		LEFT JOIN SYS_USER u ON u.ID = ur.USER_ID
+		LEFT JOIN SYS_ROLE_OFFICE ro ON ro.ROLE_ID = a.ID
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} AND a.USEABLE=#{useable}
+		<if test="user != null and user.id != null and user.id != ''">
+			AND u.ID = #{user.id}
+		</if>
+		<if test="user != null and user.loginName != null and user.loginName != ''">
+			AND u.LOGIN_NAME = #{user.loginName}
+		</if>
+		<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+	</sql>
+	
+	<select id="findListCount" resultType="long">
+		SELECT COUNT(1)
+		<include refid="listAndCountSql"/>
+	</select>
+	
+	<select id="findList" resultMap="roleResult">
+		SELECT <!-- DISTINCT -->
+			<include refid="roleColumns"/>,
+			ro.OFFICE_ID AS "officeList.id"
+		<include refid="listAndCountSql"/>
+		ORDER BY o.CODE, a.NAME
+		<if test="page !=null and !page.disabled">
+			${page.pagination}
+		</if>
+	</select>
+	
+	<select id="findAllList" resultType="Role">
+		SELECT
+			<include refid="roleColumns"/>
+		FROM SYS_ROLE a
+		LEFT JOIN SYS_OFFICE o ON o.ID = a.OFFICE_ID
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		ORDER BY o.CODE, a.NAME
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_ROLE(
+			ID, 
+			OFFICE_ID, 
+			NAME, 
+			ENNAME, 
+			ROLE_TYPE, 
+			DATA_SCOPE, 
+			CREATE_BY, 
+			CREATE_DATE, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG,
+			IS_SYS,
+			USEABLE
+		) VALUES (
+			#{id}, 
+			#{office.id}, 
+			#{name}, 
+			#{enname}, 
+			#{roleType}, 
+			#{dataScope}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag},
+			#{sysData},
+			#{useable}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_ROLE SET 
+			OFFICE_ID = #{office.id}, 
+			NAME = #{name}, 
+			ENNAME = #{enname}, 
+			ROLE_TYPE = #{roleType}, 
+			DATA_SCOPE = #{dataScope}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks},
+			IS_SYS = #{sysData},
+			USEABLE = #{useable}
+		WHERE ID = #{id}
+	</update>
+	
+	<delete id="deleteRoleMenu">
+		DELETE FROM SYS_ROLE_MENU WHERE ROLE_ID = #{id}
+	</delete>
+	
+	<insert id="insertRoleMenu">
+		INSERT INTO SYS_ROLE_MENU(ROLE_ID, MENU_ID)
+		<foreach collection="menuList" item="menu" separator=" union all ">
+			SELECT #{id}, #{menu.id}
+			<if test="dbName != 'mssql'">
+			FROM dual
+			</if>
+		</foreach>
+	</insert>
+	
+	<delete id="deleteRoleOffice">
+		DELETE FROM SYS_ROLE_OFFICE WHERE ROLE_ID = #{id}
+	</delete>
+	
+	<insert id="insertRoleOffice">
+		INSERT INTO SYS_ROLE_OFFICE(ROLE_ID, OFFICE_ID)
+		<foreach collection="officeList" item="office" separator=" union all ">
+			SELECT #{id}, #{office.id}
+			<if test="dbName != 'mssql'">
+			FROM dual
+			</if>
+		</foreach>
+	</insert>
+	
+	<update id="delete">
+		UPDATE SYS_ROLE SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id}
+	</update>
+	
+</mapper>

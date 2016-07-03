@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.sys.dao.DictDao">
+    
+	<select id="get" resultType="Dict">
+		SELECT 
+			* 
+		FROM SYS_DICT 
+		WHERE ID = #{id}
+	</select>
+	
+	<sql id="listAndCountSql">
+		FROM SYS_DICT 
+		WHERE DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		<if test="type != null and type != ''">
+			AND TYPE = #{type}
+		</if>
+		<if test="description != null and description != ''">
+			AND DESCRIPTION LIKE 
+					<if test="dbName == 'oracle'">'%'||#{description}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{description}+'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{description}, '%')</if>
+		</if>
+	</sql>
+	
+	<select id="findListCount" resultType="long">
+		SELECT COUNT(1)
+		<include refid="listAndCountSql"/>
+	</select>
+	
+	<select id="findList" resultType="Dict">
+		SELECT *
+		<include refid="listAndCountSql"/>
+		ORDER BY TYPE, SORT, UPDATE_DATE DESC
+		<if test="page !=null and !page.disabled">
+			${page.pagination}
+		</if>
+	</select> 
+	
+	<select id="findAllList" resultType="Dict">
+		SELECT 
+			* 
+		FROM SYS_DICT 
+		WHERE DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		ORDER BY TYPE, SORT, UPDATE_DATE DESC
+	</select>
+	
+	<select id="findTypeList" resultType="string">
+		SELECT 
+			TYPE 
+		FROM SYS_DICT 
+		WHERE DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		GROUP BY TYPE
+		ORDER BY TYPE
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_DICT(
+			ID, 
+			VALUE, 
+			LABEL, 
+			TYPE, 
+			DESCRIPTION, 
+			SORT, 
+			create_by, 
+			create_date, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{value}, 
+			#{label}, 
+			#{type}, 
+			#{description}, 
+			#{sort}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_DICT SET 
+			VALUE = #{value}, 
+			LABEL = #{label}, 
+			TYPE = #{type}, 
+			DESCRIPTION = #{description}, 
+			SORT = #{sort}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE SYS_DICT SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id}
+	</update>
+	
+</mapper>

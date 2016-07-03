@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.gen.dao.GenTableDao">
+    
+    <sql id="genTableColumns">
+		a.*
+	</sql>
+	
+	<sql id="genTableJoins">
+		
+    </sql>
+    
+    <select id="get" resultType="GenTable">
+		SELECT 
+			<include refid="genTableColumns"/>
+		FROM GEN_TABLE a
+		<include refid="genTableJoins"/>
+		WHERE a.ID = #{id}
+	</select>
+	
+	<select id="findList" resultType="GenTable">
+		SELECT 
+			<include refid="genTableColumns"/>
+		FROM GEN_TABLE a
+		<include refid="genTableJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} 
+		<if test="name != null and name != ''">
+			AND a.NAME = #{name}
+		</if>
+		<if test="nameLike != null and nameLike != ''">
+			AND a.NAME LIKE 
+				<if test="dbName == 'oracle'">'%'||#{nameLike}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{nameLike}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{nameLike},'%')</if>
+		</if>
+		<if test="comments != null and comments != ''">
+			AND a.COMMENTS LIKE 
+				<if test="dbName == 'oracle'">'%'||#{comments}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{comments}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{comments},'%')</if>
+		</if>
+		<if test="parentTable != null and parentTable != ''">
+			AND a.PARENT_TABLE = #{parentTable}
+		</if>
+		<choose>
+			<when test="page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.NAME ASC
+			</otherwise>
+		</choose>
+	</select>
+	<select id="findAllList" resultType="GenTable">
+		SELECT 
+			<include refid="genTableColumns"/>
+		FROM GEN_TABLE a
+		<include refid="genTableJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.NAME ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO GEN_TABLE(
+			ID, 
+			NAME, 
+			COMMENTS, 
+			CLASS_NAME, 
+			PARENT_TABLE, 
+			PARENT_TABLE_FK, 
+			create_by, 
+			create_date, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{name}, 
+			#{comments}, 
+			#{className}, 
+			#{parentTable}, 
+			#{parentTableFk}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE GEN_TABLE SET <!-- 
+			NAME = #{name},  -->
+			COMMENTS = #{comments}, 
+			CLASS_NAME = #{className}, 
+			PARENT_TABLE = #{parentTable}, 
+			PARENT_TABLE_FK = #{parentTableFk}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE GEN_TABLE SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id}
+	</update>
+	
+</mapper>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.sys.dao.LogDao">
+    
+    <sql id="listAndCountSql">
+    	FROM SYS_LOG a
+		JOIN SYS_USER u ON u.ID = a.CREATE_BY
+		JOIN SYS_OFFICE c ON c.ID = u.COMPANY_ID
+		JOIN SYS_OFFICE o ON o.ID = u.OFFICE_ID
+		WHERE a.CREATE_DATE BETWEEN #{beginDate} AND #{endDate}
+		<if test="title != null and title != ''">
+			AND a.TITLE LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{title}, '%')</if>
+		</if>
+		<if test="createBy != null and createBy.id != null and createBy.id != ''">
+			AND a.CREATE_BY = #{createBy.id}
+		</if>
+		<if test="requestUri != null and requestUri != ''">
+			AND a.REQUEST_URI LIKE 
+					<if test="dbName == 'oracle'">'%'||#{requestUri}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{requestUri}+'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{requestUri}, '%')</if>
+		</if>
+		<if test="exception != null and exception != ''">
+			AND a.TYPE = #{TYPE_EXCEPTION}
+		</if>
+    </sql>
+    
+    <select id="findListCount" resultType="long">
+		SELECT COUNT(1)
+		<include refid="listAndCountSql"/>
+	</select>
+    
+	<select id="findList" resultType="Log">
+		SELECT 
+			a.*,
+			u.ID AS "createBy.id",
+			u.NAME AS "createBy.name",
+			c.NAME AS "createBy.company.name",
+			o.NAME AS "createBy.office.name"
+		<include refid="listAndCountSql"/>
+		ORDER BY a.CREATE_DATE DESC
+		<if test="page !=null and !page.disabled">
+			${page.pagination}
+		</if>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_LOG(
+			ID, 
+			TYPE, 
+			TITLE,
+			CREATE_BY, 
+			CREATE_DATE, 
+			REMOTE_ADDR, 
+			USER_AGENT, 
+			REQUEST_URI, 
+			METHOD, 
+			PARAMS, 
+			EXCEPTION
+		) VALUES (
+			#{id}, 
+			#{type}, 
+			#{title}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{remoteAddr}, 
+			#{userAgent}, 
+			#{requestUri}, 
+			#{method}, 
+			#{params}, 
+			#{exception}
+		)
+	</insert>
+	
+</mapper>

@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.isouland.modules.sys.dao.OfficeDao">
+
+	<sql id="officeColumns">
+		a.ID,
+		a.PARENT_ID AS "parent.id",
+		a.PARENT_IDS,
+		a.AREA_ID AS "area.id",
+		a.CODE,
+		a.NAME,
+		a.SORT,
+		a.TYPE,
+		a.GRADE,
+		a.ADDRESS, 
+		a.ZIP_CODE, 
+		a.MASTER, 
+		a.PHONE, 
+		a.FAX, 
+		a.EMAIL, 
+		a.REMARKS,
+		a.CREATE_BY AS "createBy.id",
+		a.CREATE_DATE,
+		a.UPDATE_BY AS "updateBy.id",
+		a.UPDATE_DATE,
+		a.DEL_FLAG,
+		a.USEABLE AS USEABLE,
+		a.PRIMARY_PERSON AS "primaryPerson.id",
+		a.DEPUTY_PERSON AS "deputyPerson.id",
+		p.NAME AS "parent.name",
+		ar.NAME AS "area.name",
+		ar.PARENT_IDS AS "area.parentIds",
+		pp.NAME AS "primaryPerson.name",
+		dp.NAME AS "deputyPerson.name"
+	</sql>
+	
+	<sql id="officeJoins">
+		LEFT JOIN SYS_OFFICE p ON p.ID = a.PARENT_ID
+		LEFT JOIN SYS_AREA ar ON ar.ID = a.AREA_ID
+		LEFT JOIN SYS_USER pp ON pp.ID = a.PRIMARY_PERSON
+		LEFT JOIN SYS_USER dp ON dp.ID = a.DEPUTY_PERSON
+    </sql>
+	
+	<select id="get" resultType="Office">
+		SELECT
+			<include refid="officeColumns"/>
+		FROM SYS_OFFICE a
+		<include refid="officeJoins"/>
+		WHERE a.ID = #{id}
+	</select>
+	
+	<sql id="listAndCountSql">
+		FROM SYS_OFFICE a
+		<include refid="officeJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+		OR a.ID = #{currentUser.office.id}
+	</sql>
+	
+	<select id="findListCount" resultType="long">
+		SELECT COUNT(1)
+		<include refid="listAndCountSql"/>
+	</select>
+	
+	<select id="findList" resultType="Office">
+		SELECT
+			<include refid="officeColumns"/>
+		<include refid="listAndCountSql"/>
+		ORDER BY a.CODE
+		<if test="page !=null and !page.disabled">
+			${page.pagination}
+		</if>
+	</select>
+			
+	<select id="findAllList" resultType="Office">
+		SELECT
+			<include refid="officeColumns"/>
+		FROM SYS_OFFICE a
+		<include refid="officeJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		ORDER BY a.CODE
+	</select>
+	
+	<select id="findByParentIdsLike" resultType="Office">
+		SELECT
+			<include refid="officeColumns"/>
+		FROM SYS_OFFICE a
+		<include refid="officeJoins"/>
+		WHERE a.DEL_FLAG = #{DEL_FLAG_NORMAL} AND a.PARENT_IDS LIKE #{parentIds}
+		ORDER BY a.CODE
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_OFFICE(
+			ID, 
+			PARENT_ID, 
+			PARENT_IDS, 
+			AREA_ID, 
+			CODE, 
+			NAME, 
+			SORT, 
+			TYPE, 
+			GRADE, 
+			ADDRESS, 
+			ZIP_CODE, 
+			MASTER, 
+			PHONE, 
+			FAX, 
+			EMAIL, 
+			CREATE_BY, 
+			CREATE_DATE, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			REMARKS, 
+			DEL_FLAG,
+			USEABLE,
+			PRIMARY_PERSON,
+			DEPUTY_PERSON
+		) VALUES (
+			#{id}, 
+			#{parent.id}, 
+			#{parentIds}, 
+			#{area.id}, 
+			#{code}, 
+			#{name}, 
+			#{sort}, 
+			#{type}, 
+			#{grade}, 
+			#{address}, 
+			#{zipCode}, 
+			#{master}, 
+			#{phone}, 
+			#{fax}, 
+			#{email}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag},
+			#{useable},
+			#{primaryPerson.id},
+			#{deputyPerson.id}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_OFFICE SET 
+			PARENT_ID = #{parent.id}, 
+			PARENT_IDS = #{parentIds}, 
+			AREA_ID = #{area.id}, 
+			CODE = #{code}, 
+			NAME = #{name}, 
+			TYPE = #{type}, 
+			GRADE = #{grade}, 
+			ADDRESS = #{address}, 
+			ZIP_CODE = #{zipCode}, 
+			MASTER = #{master}, 
+			PHONE = #{phone}, 
+			FAX = #{fax}, 
+			EMAIL = #{email}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}, 
+			REMARKS = #{remarks},
+			USEABLE=#{useable},
+			PRIMARY_PERSON=#{primaryPerson.id},
+			DEPUTY_PERSON=#{deputyPerson.id}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="updateParentIds">
+		UPDATE SYS_OFFICE SET 
+			PARENT_ID = #{parent.id}, 
+			PARENT_IDS = #{parentIds}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE SYS_OFFICE SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id} OR PARENT_IDS LIKE 
+					<if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+					<if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+	</update>
+	
+</mapper>
